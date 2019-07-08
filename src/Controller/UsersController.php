@@ -294,7 +294,7 @@ class UsersController extends AppController
                 }else{
                     $user['first_login'] = false;  
                 }
-                
+                $user['department_ids'] = $this->loadModel('UserDepartments')->findByUserId($user['id'])->extract('department_id')->toArray();
 
                 $this->Auth->setUser($user);
                 return $this->redirect($this->Auth->redirectUrl());

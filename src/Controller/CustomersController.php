@@ -15,9 +15,6 @@ use Cake\I18n\Time;
  */
 class CustomersController extends AppController
 {    
-    private $_comditions = [];
-
-
     public function beforeFilter(Event $event)
     {
         parent::beforeFilter($event);
@@ -71,45 +68,22 @@ class CustomersController extends AppController
      */
     public function view($id = null)
     {
-
-        switch ($this->_user['role_id']) {
-            case 1:
-                $conditions['Users.id'] = $this->_user['id']; 
-            break;
-            case 2:
-                $conditions['Users.role_id <= '] = $this->_user['role_id'];
-                $conditions['Users.department_id'] = $this->_user['department_id']; 
-            break;
-            case 3:
-            case 4:
-                $conditions = null; 
-            break;
-        }
-
-        $authorized = $this->Customers->findById($id)->contain(['Users'])->where($conditions)->count();
+        $authorized = $this->Customers->findById($id)->contain(['Users'])->where($this->_conditions)->count();
         if (!$authorized) {
             $this->Flash->error(__('无权访问该页面.'));
             return $this->redirect($this->referer());
         } 
-
-        $customer = $this->Customers->get($id, [
-            'contain' => ['Users', 'Developers','CustomerMobiles' => function($q){
-                return $q->contain(['CountryCodes'])->limit(3);
-            },'CustomerEmails' => function($q){
-                return $q->limit(3);
-            }, 'CustomerCommissions' => function($q){
-                return $q->contain(['Users' => function($query){
-                    return $query->contain(['Departments']);
-                }]);
-
-            }, 'Businesses'=>function($q){
+        $condtions = $this->_conditions+['Customers.id' => $id];
+        $customer = $this->Customers->find('all', [
+            'contain' => ['Users', 'Businesses'=>function($q){
                 return $q->contain(['Events','BusinessStatuses' => function($query){
                     return $query->order('BusinessStatuses.modified Desc')
                         ->contain(['Users']);
                 }])->order('Businesses.modified DESC');
 
-            }]
-        ]);
+            }],
+            'conditions' =>$conditions
+        ])->first();
         $customer->business_statuses = $this->loadModel('BusinessStatuses')
             ->find()
             ->where(['customer_id' => $id])
@@ -146,25 +120,7 @@ class CustomersController extends AppController
         if ($this->request->is('post')) {
             if (!$this->collisionDetect('add',$customer)) {
                 $data = $this->request->getData();
-                $mobileArr = $emailArr = $statusArr = [];
-                for ($i=1; $i < 4; $i++) { 
-                    if ($this->request->getData('mobile_' .$i) && $this->request->getData('country_code_id_' .$i)) {
-                        $data['customer_mobiles'][] = [
-                            'country_code_id' => $data['country_code_id_' .$i],
-                            'mobile' => trim($data['mobile_' .$i]),
-                        ];
-                    } 
-
-                    if ($this->request->getData('email_' .$i)) {
-                        $data['customer_emails'][] = [
-                            'email' => $data['email_' .$i],
-                        ];
-                    } 
-
-                }
-                $customer = $this->Customers->patchEntity($customer, $data, ['associated' => [
-                    'CustomerMobiles','CustomerEmails'
-                ]]);
+                $customer = $this->Customers->patchEntity($customer, $data]);
                 isset($data['state']) && $customer['state'] = $this->stateArr[$data['state']];
                 isset($data['source']) && $customer['source'] = $sourceArr[$data['source']];
                 if ($this->Customers->save($customer)) {                     
@@ -186,16 +142,9 @@ class CustomersController extends AppController
                     return $this->redirect(['action' => 'index']);
                 }
                 $this->Flash->error(__('客户添加失败. 请重试.'));
-            }else{
-                for ($i=1; $i < 4; $i++) {                     
-                    $customer->country_ .$i= $this->request->getData('country_code_id_'.$i);
-                    $customer->mobile_ .$i= $this->request->getData('mobile_'.$i);
-                    $customer->email_ .$i= $this->request->getData('email_'.$i);
-                }
             }
                 
         }
-        $countrycodes = $this->loadModel('CountryCodes')->find('list', ['limit' => 200]);
         $sourceArr = array_filter(explode('|', $this->loadModel('Configs')->findByName('source')->first()->value));
         $this->set(compact('customer', 'sourceArr', 'countrycodes'));
         $this->set('_serialize', ['customer']);
@@ -214,8 +163,6 @@ class CustomersController extends AppController
          * 总监及以上有编辑的权利，也可以看/编辑全部人员的信息，所以此处不设置权限检测
          */
         
-        $this->loadModel('CustomerMobiles');
-        $this->loadModel('CustomerEmails');
         $departments  = $this->loadModel('Departments')->find('list');
         $users  = $this->loadModel('Users')->find('list')->where(['state' => 1]);        
         $this->set(compact('departments', 'users'));
@@ -236,45 +183,6 @@ class CustomersController extends AppController
                 $customer = $this->Customers->patchEntity($customer, $data);
                 isset($data['source']) && $customer['source'] = $sourceArr[$data['source']];
                 if ($this->Customers->save($customer)) {
-                    $mobile = $this->CustomerMobiles->get($this->request->getData('mobile_id_1'));
-                    $mobile->country_code_id = $this->request->getData('country_code_id_1');
-                    $mobile->mobile = $this->request->getData('mobile_1');
-                    $this->CustomerMobiles->save($mobile);
-
-                    for ($i=2; $i <4 ; $i++) { 
-                        if ($this->request->getData('mobile_id_' . $i)) {
-                             $mobile = $this->CustomerMobiles->get($this->request->getData('mobile_id_' . $i));
-                             if ($this->request->getData('mobile_' . $i)) {
-                                 $mobile->country_code_id = $this->request->getData('country_code_id_' . $i);
-                                 $mobile->mobile = $this->request->getData('mobile_' . $i);
-                                 $this->CustomerMobiles->save($mobile); 
-                             }else{
-                                $this->CustomerMobiles->delete($mobile);
-                             }
-                        }elseif ($this->request->getData('mobile_' . $i)) {
-                            $mobile = $this->CustomerMobiles->newEntity();
-                            $mobile->customer_id = $customer->id;
-                            $mobile->country_code_id = $this->request->getData('country_code_id_' . $i);
-                            $mobile->mobile = $this->request->getData('mobile_' . $i);
-                            $this->CustomerMobiles->save($mobile);
-                        }
-                    }
-                    for ($i=1; $i <3 ; $i++) { 
-                        if ($this->request->getData('email_id_' . $i)) {
-                             $email = $this->CustomerEmails->get($this->request->getData('email_id_' . $i));
-                             if ($this->request->getData('email_' . $i)) {
-                                 $email->email = $this->request->getData('email_' . $i);
-                                 $this->CustomerEmails->save($email); 
-                             }else{
-                                $this->CustomerEmails->delete($email);
-                             }
-                        }elseif ($this->request->getData('email_' . $i)) {
-                            $email = $this->CustomerEmails->newEntity();
-                            $email->customer_id = $customer->id;
-                            $email->email = $this->request->getData('email_' . $i);
-                            $this->CustomerEmails->save($email);
-                        }
-                    }
 
                     if ($origin_user_id != $customer->user_id) {
                         $this->transferSql($customer->user_id,['id' => $customer->id]);
@@ -287,42 +195,8 @@ class CustomersController extends AppController
                 $this->Flash->error(__('客户修改失败.请重试.'));
             }
         }
-
-        
-        $countrycodes = $this->CustomerMobiles->CountryCodes->find('list', ['limit' => 200]);
-        $this->set(compact('customer', 'sourceArr','countrycodes'));
+        $this->set(compact('customer', 'sourceArr'));
         $this->set('_serialize', ['customer']);
-    }
-
-    public function deleteMobile(){
-        $this->request->allowMethod(['post']);
-        $this->loadModel('CustomerMobiles');
-        $data = null;
-        $mobile = $this->CustomerMobiles->get($this->request->getData('id'));
-        if ($this->CustomerMobiles->delete($mobile)) {
-            $data = 1;
-        } else {
-            $data = 0;
-        }
-
-        $this->response->body($data);
-        return $this->response;
-    }
-
-
-    public function deleteEmail(){
-        $this->request->allowMethod(['post']);
-        $this->loadModel('CustomerEmails');
-        $data = null;
-        $email = $this->CustomerEmails->get($this->request->getData('id'));
-        if ($this->CustomerEmails->delete($email)) {
-            $data = 1;
-        } else {
-            $data = 0;
-        }
-
-        $this->response->body($data);
-        return $this->response;
     }
 
 
@@ -340,8 +214,6 @@ class CustomersController extends AppController
         if ($this->Customers->delete($customer)) {
             $this->Customers->Businesses->deleteAll(['customer_id' => $id]);
             $this->Customers->BusinessStatuses->deleteAll(['customer_id' => $id]);
-            $this->Customers->CustomerMobiles->deleteAll(['customer_id' => $id]);
-            $this->Customers->CustomerEmails->deleteAll(['customer_id' => $id]);
             $this->Customers->CustomerImages->deleteAll(['customer_id' => $id]);
 
             $folder = new Folder(WWW_ROOT.'files/customer-images/'.$id);
@@ -367,17 +239,7 @@ class CustomersController extends AppController
      */
     private function filter($type = '') 
     {
-        $conditions = null;
-        
-        switch ($this->_user['role_id']) {
-            case 1:
-                $conditions['Users.id'] = $this->_user['id']; 
-            break;
-            case 2:
-                $conditions['Users.role_id <= '] = $this->_user['role_id'];
-                $conditions['Users.department_id'] = $this->_user['department_id']; 
-            break;
-        } 
+        $conditions = $this->_conditions; 
 
         if ( isset($_GET['user_id']) && $_GET['user_id'] != '' )
         {   
@@ -522,42 +384,17 @@ class CustomersController extends AppController
 
     protected function is_exisit_mobile($mobile = null, $country = null, $option =[]){
         $data = null;
-        $this->loadModel('CustomerMobiles'); 
-        if (!empty($option)) {
-            foreach ($option as $key => $value) {
-                $sWhere[$key] = $value;
-            }
-        }       
-        $sWhere['CustomerMobiles.mobile = '] = $mobile;
-        $sWhere['CustomerMobiles.country_code_id = '] = $country;
-        $data = $this->CustomerMobiles->find('all',[
-            'conditions' => $sWhere,
-            'fields' => ['CustomerMobiles.mobile'],
-            'contain' => ['Customers' => function($q){
-                return $q->contain(['Users'])->select(['Customers.name','Users.username']);
-            }]
-        ])
-        ->first();
+        !empty($option) && $sWhere = $option;
+        $sWhere['Customers.phone like '] = '%|'.$mobile.'|%';
+        $data = $this->Customers->find('all')->where($sWhere)->first();
         return $data;
     }
 
     protected function is_exisit_email($email = null, $option =[]){
         $data = null;
-        $this->loadModel('CustomerEmails'); 
-        if (!empty($option)) {
-            foreach ($option as $key => $value) {
-                $sWhere[$key] = $value;
-            }
-        }       
-        $sWhere['CustomerEmails.email = '] = $email;
-        $data = $this->CustomerEmails->find('all',[
-            'conditions' => $sWhere,
-            'fields' => ['CustomerEmails.email'],
-            'contain' => ['Customers' => function($q){
-                return $q->contain(['Users'])->select(['Customers.name','Users.username']);
-            }]
-        ])
-        ->first();
+        !empty($option) && $sWhere = $option;
+        $sWhere['Customers.email like '] = '%|'.$email.'|%';
+        $data = $this->Customers->find('all')->where($sWhere)->first();
         return $data;
     }
 
@@ -866,19 +703,13 @@ class CustomersController extends AppController
         $option = $type === 'edit' ? ['Customers.user_id != ' => $customer->user_id] : [];
 
         $isExistMobileArr = array();
-        for ($i=0; $i < 3; $i++) { 
-            $isExistMobile = null;
-            $mobile = trim($this->request->getData('mobile_'.$i));
-            $code = $this->request->getData('country_code_id_'.$i);
-            $mobile && $code && $isExistMobile = $this->is_exisit_mobile($mobile, $code,$option);
+        foreach (explode('|', trim($this->request->getData('phone'))) as $key => $value) {
+            $isExistMobile = $this->is_exisit_mobile($mobile, $code,$option);
             if($isExistMobile != null) $isExistMobileArr[] = $isExistMobile;
         }
-
         $isExistEmailArr = array();
-        for ($i=0; $i < 3; $i++) { 
-            $isExistEmail = null;
-            $email = trim($this->request->getData('email_'.$i));
-            $email && $isExistEmail = $this->is_exisit_email($email,$option);
+        foreach (explode('|', trim($this->request->getData('email'))) as $key => $value) {
+            $isExistEmail = $this->is_exisit_mobile($mobile, $code,$option);
             if($isExistEmail != null) $isExistEmailArr[] = $isExistEmail;
         }
 
@@ -896,9 +727,9 @@ class CustomersController extends AppController
                 
             }
             return true;
-        }else {
-            return false;
         }
+        return false;
+        
     }
 
     public function autocompelete(){

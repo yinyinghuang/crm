@@ -37,4 +37,8 @@ class AppView extends View
     public function initialize()
     {
     }
+    //检测权限并创建菜单按钮
+    public function createButton($auth_node){
+        
+    }
 }

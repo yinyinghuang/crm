@@ -12,12 +12,12 @@
 <div class="collapse navbar-collapse" id="example-navbar-collapse">
     <ul class="nav navbar-nav">
         <li><?= $this->Html->link(__('新增客戶'), ['action' => 'add']) ?></li>
-        <!-- <?php if (strpos($_privileges, 'i')): ?>            
+        <?php if (in_array('customers/import', $_privileges)): ?>            
         <li><?= $this->Html->link(__('导入客戶'), ['action' => 'import']) ?></li>
         <?php endif ?>
-        <?php if (strpos($_privileges, 'o')): ?>
+        <?php if (in_array('customers/export', $_privileges)): ?>
         <li><?= $this->Html->link(__('导出客戶'), ['action' => 'export']) ?></li>
-        <?php endif ?> -->
+        <?php endif ?>
 <?= $this->end() ?>
 <div class="customers index columns content ">
     
@@ -97,7 +97,7 @@
     </div>
     <form action="<?= $this->Url->build(['action' => 'bulk'])?>" method="post" id="bulk">
     <div class="segment">
-        <?php if (strpos($_privileges, 'd') !== false): ?>
+        <?php if (in_array('customers/delete', $_privileges)): ?>
             <button type="submit" class="btn btn-danger del" name="submit" value="del">删除选中</button>
         <?php endif ?>
         <span class="btn btn-primary add_status_btn">更新进展</span>
@@ -141,7 +141,7 @@
     </table>
     <div id="message" class="ui segment message text-center">加载中...</div>
     <div class="segment">
-        <?php if (strpos($_privileges, 'd') !== false): ?>
+        <?php if (in_array('customers/delete', $_privileges)): ?>
             <button type="submit" class="btn btn-danger del" name="submit" value="del">删除选中</button>
         <?php endif ?>
         <span class="btn btn-primary add_status_btn">更新进展</span>

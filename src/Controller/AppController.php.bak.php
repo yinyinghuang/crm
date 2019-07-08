@@ -18,7 +18,6 @@ use Cake\Controller\Controller;
 use Cake\I18n\Time;
 use Cake\I18n\Date;
 use Cake\Event\Event;
-use Cake\Utility\Inflector;
 
 /**
  * Application Controller
@@ -109,6 +108,7 @@ class AppController extends Controller
         $this->loadComponent('Auth', [
             'authenticate' => [
                 'Form' => [
+                    // 'finder' => 'auth',
                     'fields' => ['username' => 'userid']
                 ]
             ],
@@ -129,73 +129,111 @@ class AppController extends Controller
 
     public function beforeFilter(Event $event)
     {   
-        $this->Auth->allow(['draw','sendReporter','login']);
-        
-        $session = $this->request->session();
-        if (isset($session->read('Auth')['User'])){
-            $this->_user = $session->read('Auth')['User'];
-            $session = $this->request->session();
-            $role_id = $session->read('Auth')['User']['role_id'];
-            $auth_nodes = $this->getAuthNodesByRoleId($role_id);
-            $privileges = $this->checkAuth($auth_nodes);
-            $navs = $this->getNavigator($auth_nodes);
-            $this->_conditions = $this->calDataField($this->_user);
-            $this->set('_privileges',$privileges);
-            $this->set('_user',$this->_user);
-            // //读取今日应联系的客户名单
-            // $businessStatusesTable = $this->loadModel('BusinessStatuses')->find();
-            // $ahead = $this->loadModel('Configs')->findByName('ahead')->first()->value?:1;
+       $this->Auth->allow(['draw','sendReporter','login']);
+        // $session = $this->request->session();
+        // if (isset($session->read('Auth')['User'])){
+        //     $role_id = $session->read('Auth')['User']['role_id'];
+        //     $privileges = $this->checkAuth($role_id); 
+        //     $this->calDataField();
+            
 
-            // $data = $this->request->getQuery();
-            // if(isset($data['business_status_id']) && isset($data['done'])){
-            //     $this->loadModel('BusinessStatuses')->query()->update()->set(['done' => 1])->where(['id' => $data['business_status_id']])->execute();
-            // }
+        //     $this->_modules = $privileges['modules'];
+        //     $this->_privileges = $privileges['privileges'][$controller];
+        //     $this->_module_privileges = $privileges['privileges'];
+        //     $this->set('_module_privileges',$this->_module_privileges);
+        //     $this->set('_privileges',$this->_privileges);
+        //     $this->set('_modules',$this->_modules);
+        //     $this->set('_user',$this->_user);
+        //     //读取今日应联系的客户名单
+        //     $businessStatusesTable = $this->loadModel('BusinessStatuses')->find();
+        //     $ahead = $this->loadModel('Configs')->findByName('ahead')->first()->value?:1;
 
-            // $todolist = $businessStatusesTable
-            //     ->where([
-            //         'done' => 0,
-            //         'BusinessStatuses.user_id' => $this->_user['id'],
-            //         'next_contact_time <' => (new Date("+$ahead day"))->i18nFormat('yyyy-MM-dd HH:mm:ss')
-            //     ])
-            //     ->contain(['Customers' => function($q){
-            //         return $q->contain(['CustomerMobiles' => function($q){
-            //             return $q->contain(['CountryCodes']);
-            //         }]);
-            //     }])
-            //     ->select([
-            //         'id' => 'BusinessStatuses.id',
-            //         'name' => 'Customers.name',
-            //         'next_contact_time' => 'BusinessStatuses.next_contact_time',
-            //         'next_note' => 'BusinessStatuses.next_note',
-            //         'status' => 'BusinessStatuses.status'
-            //     ])
-            //     ->enableAutoFields(true)
-            //     ->map(function($row)
-            //     {
-            //         $row->next_contact_time = (new Time($row->next_contact_time))->i18nFormat('MM-dd HH:mm:ss');
-            //         $mobile = $row->customer->customer_mobiles[0];
-            //         $row->mobile = '+' .$mobile->country_code->country_code . '-'.$mobile->mobile;
-            //         return $row;
-            //     })
-            //     ->toArray();
+        //     $data = $this->request->getQuery();
+        //     if(isset($data['business_status_id']) && isset($data['done'])){
+        //         $this->loadModel('BusinessStatuses')->query()->update()->set(['done' => 1])->where(['id' => $data['business_status_id']])->execute();
+        //     }
 
-            // $stateArr = array_filter(explode('|', $this->loadModel('Configs')->findByName('state')->first()->value));
-            // $sourceArr = array_filter(explode('|', $this->loadModel('Configs')->findByName('source')->first()->value));
-            // $stateColorArr = ['','negative','positive','','','','','',''];
-            // $this->stateArr = $stateArr;
-            // $this->sourceArr = $sourceArr;
-            $this->set(compact('stateArr','stateColorArr','todolist','warning','sourceArr','navs'));
+        //     $todolist = $businessStatusesTable
+        //         ->where([
+        //             'done' => 0,
+        //             'BusinessStatuses.user_id' => $this->_user['id'],
+        //             'next_contact_time <' => (new Date("+$ahead day"))->i18nFormat('yyyy-MM-dd HH:mm:ss')
+        //         ])
+        //         ->contain(['Customers' => function($q){
+        //             return $q->contain(['CustomerMobiles' => function($q){
+        //                 return $q->contain(['CountryCodes']);
+        //             }]);
+        //         }])
+        //         ->select([
+        //             'id' => 'BusinessStatuses.id',
+        //             'name' => 'Customers.name',
+        //             'next_contact_time' => 'BusinessStatuses.next_contact_time',
+        //             'next_note' => 'BusinessStatuses.next_note',
+        //             'status' => 'BusinessStatuses.status'
+        //         ])
+        //         ->enableAutoFields(true)
+        //         ->map(function($row)
+        //         {
+        //             $row->next_contact_time = (new Time($row->next_contact_time))->i18nFormat('MM-dd HH:mm:ss');
+        //             $mobile = $row->customer->customer_mobiles[0];
+        //             $row->mobile = '+' .$mobile->country_code->country_code . '-'.$mobile->mobile;
+        //             return $row;
+        //         })
+        //         ->toArray();
 
-        } 
+        //     $stateArr = array_filter(explode('|', $this->loadModel('Configs')->findByName('state')->first()->value));
+        //     $sourceArr = array_filter(explode('|', $this->loadModel('Configs')->findByName('source')->first()->value));
+        //     $stateColorArr = ['','negative','positive','','','','','',''];
+        //     $this->stateArr = $stateArr;
+        //     $this->sourceArr = $sourceArr;
+        //     $this->set(compact('stateArr','stateColorArr','todolist','warning','sourceArr'));
+
+        // } 
 
     }
     // 检查功能权限
-    protected function checkAuth($auth_nodes)
+    protected function checkAuth($role_id)
     {
         $session = $this->request->session();
-        $auth_routes = array_column($auth_nodes, 'routing_address');
-        $current_route_address = Inflector::dasherize($this->request->controller).'/'.Inflector::dasherize($this->request->action);
-        if(!in_array($current_route_address, $auth_routes)) {
+        // if (!$session->check('Privileges' . $role_id) || $session->read('Privileges' . $role_id) == null) {
+        //该角色对应的授权信息缓存不存在的话，重新读取存入
+            // $this->loadModel('Privileges');            
+            // $results = $this->Privileges->find('all',[
+            //     'fields' => ['what','how'],
+            //     'conditions' => ['role_id' => $role_id]
+            // ])->combine('what','how')->toArray();
+
+
+            $entity = json_decode($this->loadModel('Configs')->findByName('privilege')->first()->value,true);
+            $results = [];
+            foreach ($entity[$role_id] as $key => $value) {
+                $results[$key] = implode('', $value);
+            }
+            /**
+             * $privileges
+             *     role_id 授权角色
+             *     modules 授权的模块数组
+             *     privileges 授权的模块对应的权限数组
+             */
+
+            $privileges['role_id'] = $role_id; 
+            $privileges['privileges'] = $results;
+            $privileges['modules'] = array_keys($results);
+            
+            $session->write('Privileges' . $role_id,$privileges);
+        // }
+
+        /**
+         * 在AppController 中统一检测用户是否有进入当前模块的当前页面     
+         * 再在各自模块中进行查看范围的限制
+         */
+        $action = $this->request->action;
+        $controller = $this->controller_modules[$this->request->controller];
+
+        $this->_user = $this->request->session()->read('Auth')['User'];
+        $privileges = $this->request->session()->read('Privileges' . $this->_user['role_id']);
+
+        if(!in_array( $controller, $privileges['modules']) || strpos($privileges['privileges'][ $controller], $this->action_hows[$action] ) === false) {
             if ($this->request->is('ajax')) {
                 $this->response->body('authorized_wrong');
                 return $this->response;
@@ -205,70 +243,29 @@ class AppController extends Controller
                 if (strpos($refer, 'users/login')) {
                     $refer='/';
                 }
-                #return $this->redirect($this->referer());
+                return $this->redirect($this->referer());
             }
         }
-        return $auth_routes;
-    }
-    //获取角色拥有的权限
-    protected function getAuthNodesByRoleId($role_id){
-        $auth_node_ids = $this->loadModel('Roles')->findById($role_id)->first()->auth_node_ids;
-        $auth_node_ids = explode(',', $auth_node_ids);
-        $auth_nodes = [];
-        if(!empty($auth_node_ids)){
-            $auth_nodes = $this->loadModel('AuthNodes')->find('all',[
-                'conditions' => ['id in' => $auth_node_ids],
-            ])  
-                ->hydrate(false)
-                ->toArray();
-        }
-        return $auth_nodes;
+        return $privileges;
     }
     // 检查角色数据权限
-    protected function calDataField($user)
+    protected function calDataField($role_id)
     {
-        switch ($user['role_id']) {
+        switch ($role_id) {
             case 1:
-                $conditions = ['Users.id' => $user['id']];
+                $conditions['Businesses'] = ['Businesses.user_id' => 'user_id'];
+                $conditions['BusinessStatuses'] = ['BusinessStatuses.user_id' => 'user_id'];
+                $conditions['BusinessStatuses'] = ['BusinessStatuses.user_id' => 'user_id'];
                 break;
-            case 2:
-                $user_ids = $this->loadModel('UserDepartments')->find('all')
-                    ->where(['department_id in' => $user['department_ids']])
-                    ->extract('user_id')
-                    ->toArray();
-                $conditions = ['Users.id in' => $user_ids,'Users.role_id <= ' => $user['role_id']];
-                break;            
-            case 3:
-            case 4:
-                $conditions = [];
+            
+            default:
+                
                 break;
         }
+        $conditions['Businesses'] = [
+            'Businesses.user_id' => 'user_id',            
+        ];
         return $conditions;
-    }
-    //获取导航栏
-    protected function getNavigator($auth_nodes){
-        $navigators = $this->formatNavigator($auth_nodes,0);
-        return $navigators;
-    }
-    // 格式化导航栏
-    protected function formatNavigator($arr,$pid){
-        $res = [];
-        foreach ($arr as $k => $v) {
-            if($v['is_nav'] && $v['parent_id'] == $pid){
-                $res[] = $v;
-                unset($arr[$k]);
-                $tmp = $this->formatNavigator($arr,$v['id']);
-                if(!empty($tmp)){
-                    foreach ($res as $kk => &$vv) {
-                        if($vv['id'] == $tmp[0]['parent_id']){
-                            $vv['sub'] = $tmp;
-                        }
-                    }
-                }
-                continue;
-            }
-        }
-        return $res;
     }
 
     /**

@@ -58,18 +58,84 @@ $title = 'Market Hotpot';
                   <div class="menu_section">
                     <h3>General</h3>
                     <ul class="nav side-menu">
-                      <?php foreach ($navs as $nav): ?>
-                        <li><a<?php if (empty($nav['sub'])): ?>href="/<?= $nav['routing_address'] ?>"<?php endif ?>><i class="<?= $nav['nav_icon'] ?>"></i><?= $nav['title'] ?><?php if (!empty($nav['sub'])): ?><span class="fa fa-chevron-down"></span><?php endif ?></a>
-                        <?php if (!empty($nav['sub'])): ?>
-                          <ul class="nav child_menu">
-                            <?php foreach ($nav['sub'] as $sub): ?>
-                              <li><a href="/<?=$sub['routing_address'] ?>"><?=$sub['title'] ?></a></li>
-                            <?php endforeach ?>               
+                    <?php if (array_key_exists('Customers', $_module_privileges)): ?>
+                      <li><a><i class="fa fa-users"></i> 客戶 <span class="fa fa-chevron-down"></span></a>
+                        <ul class="nav child_menu">
+                          <li><a href="<?= $this->Url->build(['controller' => 'Customers', 'action' => 'index']) ?>">客戶列表</a></li>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Customers', 'action' => 'add']) ?>">新增客戶</a></li>
+                          <!-- <?php if (strpos($_module_privileges['Customers'], 'i')): ?>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Customers', 'action' => 'import']) ?>">客户导入</a></li> 
+                          <?php endif ?>
+                          <?php if (strpos($_module_privileges['Customers'], 'o')): ?>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Customers', 'action' => 'export']) ?>">客户导出</a></li>        
+                          <?php endif ?>      
+                          <?php if (strpos($_module_privileges['Customers'], 't')): ?>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Customers', 'action' => 'transfer']) ?>">客户转移</a></li>  
+                          <?php endif ?>  -->                        
                         </ul>
-                        <?php endif ?>                        
                       </li> 
-                      <?php endforeach ?>
-                                        
+                      <!-- <li><a><i class="fa fa-tasks"></i> 订单 <span class="fa fa-chevron-down"></span></a>
+                        <ul class="nav child_menu">
+                          <li><a href="<?= $this->Url->build(['controller' => 'Businesses', 'action' => 'index']) ?>">订单列表</a></li>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Businesses', 'action' => 'add']) ?>">新增订单</a></li>                    
+                        </ul>
+                      </li> -->
+                      <!-- <li><a><i class="fa fa-cubes"></i> 活动 <span class="fa fa-chevron-down"></span></a>
+                        <ul class="nav child_menu">
+                          <li><a href="<?= $this->Url->build(['controller' => 'Events', 'action' => 'index']) ?>">活动列表</a></li>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Events', 'action' => 'add']) ?>">新增活动</a></li>
+                          <?php if (in_array($_user['role_id'], [3,4])): ?>  
+                          <li><a href="<?= $this->Url->build(['controller' => 'EventTypes', 'action' => 'index']) ?>">活动类型</a></li>  
+                          <?php endif ?>     
+                        </ul>
+                      </li>  -->
+                    <?php endif ?>
+                    <!-- <?php if (array_key_exists('Campaigns', $_module_privileges)): ?>
+                       <li><a><i class="fa fa-paper-plane"></i> 群發推廣 <span class="fa fa-chevron-down"></span></a>
+                        <ul class="nav child_menu">
+                          <li><a href="<?= $this->Url->build(['controller' => 'Campaigns', 'action' => 'index']) ?>">群發列表</a></li>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Campaigns', 'action' => 'addEmail']) ?>">群发郵件</a></li>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Campaigns', 'action' => 'addSms']) ?>">群发短信</a></li>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Campaigns', 'action' => 'addMms']) ?>">群发彩信</a></li>
+                        </ul>
+                      </li>                                     
+                    <?php endif ?>  -->                                     
+                    <?php if (array_key_exists('Users', $_module_privileges) || array_key_exists('Departments', $_module_privileges)): ?>
+                      <li><a><i class="fa fa-user"></i> 分組 <span class="fa fa-chevron-down"></span></a>
+                        <ul class="nav child_menu"> 
+                          <?php if (in_array('Users', $_modules)): ?>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'index']) ?>">員工</a></li>
+                          <?php endif ?>
+                          <?php if (in_array('Departments', $_modules)): ?>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Departments', 'action' => 'index']) ?>">部门</a></li>
+                          <?php endif ?>    
+                        </ul>
+                      </li>     
+                    <?php endif ?>  
+                   <!--  <?php if (array_key_exists('Developers', $_module_privileges)): ?>
+                      <li><a> <i class="fa fa-university"></i> 開發商 <span class="fa fa-chevron-down"></span></a>
+                        <ul class="nav child_menu">
+                          <li><a href="<?= $this->Url->build(['controller' => 'Developers', 'action' => 'index']) ?>">開發商列表</a></li>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Developers', 'action' => 'add']) ?>">新增開發商</a></li>
+                        </ul>
+                      </li>  
+                    <?php endif ?>  -->  
+                    <?php if (array_key_exists('Configs', $_module_privileges)): ?>                      
+                      <li><a> <i class="fa fa-cog"></i> 设置 <span class="fa fa-chevron-down"></span></a>
+                        <ul class="nav child_menu">                          
+                          <li><a href="<?= $this->Url->build(['controller' => 'CountryCodes', 'action' => 'index']) ?>">区号列表</a></li>                          
+                          <li><a href="<?= $this->Url->build(['controller' => 'Configs', 'action' => 'index']) ?>">其他设置</a></li>
+                          <!-- <?php if (in_array('Privileges', $_modules)): ?>
+                          <li><a href="<?= $this->Url->build(['controller' => 'Privileges', 'action' => 'index']) ?>">权限设置</a></li>
+                          <?php endif ?>  -->
+                        </ul>
+                      </li>  
+                    <?php endif ?>   
+                    <!-- <?php if (array_key_exists('Statistics', $_module_privileges)): ?>                      
+                      <li><a href="<?= $this->Url->build(['controller' => 'Statistics', 'action' => 'index']) ?>"> <i class="fa fa-pie-chart"></i> 数据统计</a>
+                        
+                      </li>  
+                    <?php endif ?>  -->                      
                     </ul>
                   </div>
                 </div>
